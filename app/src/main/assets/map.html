@@ -1,24 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <title>Leaflet Map</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-    <title>Leaflet Map</title>
 </head>
-<body>
-<div id="map" style="height: 100vh; width: 100%;"></div>
-<script>
-    const map = L.map('map').setView([51.505, -0.09], 13);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+<body style="margin:0; padding:0;">
+    <div id="map" style="height: 100vh; width: 100%;"></div>
 
-    let vehicleMarker = L.marker([51.505, -0.09]).addTo(map);
+    <script>
+        let map;
+        let routeLayer;
+        let vehicleMarker;
+    
+        function initMap(latitude, longitude) {
+            map = L.map('map').setView([latitude, longitude], 13);
+    
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+    
+            vehicleMarker = L.marker([latitude, longitude], {
+                icon: L.icon({
+                    iconUrl: "https://cdn-icons-png.flaticon.com/512/18970/18970758.png",
+                    iconSize: [32, 32]
+                })
+            }).addTo(map);
+        }
+    
 
-    function updateVehiclePosition(lat, lng) {
-      vehicleMarker.setLatLng([lat, lng]);
-      map.panTo([lat, lng]);
-    }
-
-    window.updateVehiclePosition = updateVehiclePosition;
-</script>
+        function updateVehiclePosition(lat, lng) {
+            if (vehicleMarker) {
+                vehicleMarker.setLatLng([lat, lng]);
+                map.panTo([lat, lng]);
+            }
+        }
+    
+    
+        function drawRoute(logs) {
+            if (logs.length === 0) return;
+    
+            const points = logs.map(log => [log.latitude, log.longitude]);
+    
+           
+            if (routeLayer) {
+                map.removeLayer(routeLayer);
+            }
+    
+            
+            routeLayer = L.polyline(points, { color: 'blue', weight: 4 }).addTo(map);
+            map.fitBounds(routeLayer.getBounds());
+        }
+    
+    
+        function toggleRouteVisibility(showRoute, logsJson) {
+            if (showRoute) {
+                const logs = JSON.parse(logsJson);
+                drawRoute(logs);
+            } else if (routeLayer) {
+                map.removeLayer(routeLayer);
+            }
+        }
+    
+        window.updateVehiclePosition = updateVehiclePosition;
+        window.toggleRouteVisibility = toggleRouteVisibility;
+    </script>
+    
 </body>
 </html>
