@@ -3,58 +3,94 @@ package com.example.minifleettracker.viewmodel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.asFlow
 import androidx.lifecycle.viewModelScope
 import com.example.minifleettracker.data.database.TripLog
 import com.example.minifleettracker.data.model.VehicleData
 import com.example.minifleettracker.data.repository.MiniFleetTrackerRepository
+import com.example.minifleettracker.helper.UIEvent
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class FleetViewModel(private val repository: MiniFleetTrackerRepository): ViewModel() {
-    private val _vehicleData = MutableLiveData<VehicleData>()
+    private val _vehicleData = MutableLiveData<VehicleData>().apply {
+        value = VehicleData(-6.1754, 106.8272, 0, engineOn = false, doorOpen = false)
+    }
     val vehicleData: LiveData<VehicleData> = _vehicleData
+    val isConnected: LiveData<Boolean> = repository.isConnected
 
-    private val _events = MutableSharedFlow<String>()
-    val events = _events.asSharedFlow()
+    private val _snackBarEvents = MutableStateFlow(UIEvent.ShowSnackbar())
+    val snackBarEvents = _snackBarEvents.asStateFlow()
+
+    private val _alertEvents = MutableStateFlow(UIEvent.ShowAlert())
+    val alertEvents = _alertEvents.asStateFlow()
 
     val tripLogs: LiveData<List<TripLog>> = repository.getTripLogs()
 
-    private val route = listOf(
-        Pair(51.505, -0.09),
-        Pair(51.506, -0.091),
-        Pair(51.507, -0.092)
-    )
-
-    init {
-        repository.startMqtt()
+    fun retryConnection() {
         viewModelScope.launch {
-           repository.sensorData.collect {data->
-               _vehicleData.postValue(data)
-           }
+            repository.stopMqtt()
+            delay(500)
+            repository.startMqtt()
         }
     }
 
-    fun startSimulation() {
-        if (route.isEmpty()) return
+    init {
+        repository.startMqtt()
 
         viewModelScope.launch {
-            route.forEachIndexed { index, (lat, lng) ->
-                delay(3000)
-                val speed = (20..100).random()
-                _vehicleData.postValue(
-                    VehicleData(
-                        lat,
-                        lng,
-                        speed,
-                        engineOn = (0..1).random() == 1,
-                        doorOpen = (0..1).random() == 1
-                    )
-                )
+            repository.sensorData.collect { data ->
+                _vehicleData.postValue(data)
 
-                if (index == route.lastIndex) {
-                    _events.emit("✅ Simulation Complete!")
+                when {
+                    data.speed > 80 -> {
+                        _snackBarEvents.update{
+                            it.copy(
+                                message = "⚠️ Overspeeding! (${data.speed} km/h)"
+                            )
+                        }
+                    }
+
+                    data.doorOpen && data.speed > 0 -> {
+                        _snackBarEvents.update{
+                            it.copy(
+                                message =  "🚪 Door is OPEN while moving!"
+                            )
+                        }
+                    }
+
+                    data.engineOn -> {
+                        _snackBarEvents.update{
+                            it.copy(
+                                message = "🟢 Engine turned ON"
+                            )
+                        }
+                    }
+
+                    !data.engineOn -> {
+                        _snackBarEvents.update{
+                            it.copy(
+                                message = "🔴 Engine turned OFF"
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        viewModelScope.launch {
+            repository.isConnected.asFlow().collect { connected ->
+                if (!connected) {
+                    _alertEvents.update {
+                        UIEvent.ShowAlert(
+                            message = "Disconnected From MQTT",
+                            actionLabel = "Retry",
+                            onAction = ::retryConnection
+                        )
+                    }
                 }
             }
         }

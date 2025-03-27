@@ -1,72 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Leaflet Map</title>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Mobile tutorial - Leaflet</title>
+
+    <link rel="stylesheet" href="leaflet.css"/>
+    <script src="leaflet.js"></script>
 </head>
 <body style="margin:0; padding:0;">
     <div id="map" style="height: 100vh; width: 100%;"></div>
 
     <script>
-        let map;
-        let routeLayer;
-        let vehicleMarker;
-    
+        const map = L.map('map', {
+            zoomControl:false
+        }).fitWorld();
+
+        const tiles = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 20,
+            attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+
         function initMap(latitude, longitude) {
-            map = L.map('map').setView([latitude, longitude], 13);
-    
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(map);
-    
+            if (typeof map !== 'undefined' && map !== null) {
+
+                map.setView([latitude, longitude], 13);
+            } else {
+                console.error("Map is not initialized yet!");
+                return;
+            }
+
+            if (typeof vehicleMarker !== 'undefined' && vehicleMarker !== null) {
+                map.removeLayer(vehicleMarker);
+            }
+
             vehicleMarker = L.marker([latitude, longitude], {
                 icon: L.icon({
-                    iconUrl: "https://cdn-icons-png.flaticon.com/512/18970/18970758.png",
-                    iconSize: [32, 32]
+                    iconUrl: "https://cdn-icons-png.flaticon.com/512/6668/6668677.png",
+                    iconSize: [42, 42]
                 })
             }).addTo(map);
         }
-    
-
-        function updateVehiclePosition(lat, lng) {
-            if (vehicleMarker) {
-                vehicleMarker.setLatLng([lat, lng]);
-                map.panTo([lat, lng]);
-            }
-        }
-    
-    
-        function drawRoute(logs) {
-            if (logs.length === 0) return;
-    
-            const points = logs.map(log => [log.latitude, log.longitude]);
-    
-           
-            if (routeLayer) {
-                map.removeLayer(routeLayer);
-            }
-    
-            
-            routeLayer = L.polyline(points, { color: 'blue', weight: 4 }).addTo(map);
-            map.fitBounds(routeLayer.getBounds());
-        }
-    
-    
-        function toggleRouteVisibility(showRoute, logsJson) {
-            if (showRoute) {
-                const logs = JSON.parse(logsJson);
-                drawRoute(logs);
-            } else if (routeLayer) {
-                map.removeLayer(routeLayer);
-            }
-        }
-    
-        window.updateVehiclePosition = updateVehiclePosition;
-        window.toggleRouteVisibility = toggleRouteVisibility;
     </script>
-    
 </body>
 </html>

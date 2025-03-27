@@ -1,6 +1,7 @@
 package com.example.minifleettracker.data.repository
 
 import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.example.minifleettracker.data.database.TripLog
 import com.example.minifleettracker.data.database.TripLogDao
 import com.example.minifleettracker.data.model.VehicleData
@@ -16,21 +17,44 @@ class MiniFleetTrackerRepository private constructor(
     private val _sensorData = MutableSharedFlow<VehicleData>()
     val sensorData = _sensorData.asSharedFlow()
 
-    private val mqttService = MqttHelper { message ->
-        val data = Gson().fromJson(message, VehicleData::class.java)
-        runBlocking {
-            updateSensorData(data.speed, data.engineOn, data.doorOpen)
+    private val _isConnected = MutableLiveData<Boolean>(true) // Track connection status
+    val isConnected: LiveData<Boolean> = _isConnected
+
+    private val mqttService = MqttHelper (
+        onMessageReceived = {message ->
+            val data = Gson().fromJson(message, VehicleData::class.java)
+            runBlocking {
+                updateSensorData(
+                    data.latitude,
+                    data.longitude,
+                    data.speed,
+                    data.engineOn,
+                    data.doorOpen)
+            }
+        },
+        onConnectionStatusChanged = { isConnected ->
+            _isConnected.postValue(isConnected)
         }
-    }
+    )
 
     fun startMqtt() {
         mqttService.connect()
     }
 
-    private suspend fun updateSensorData(speed: Int, engineOn: Boolean, doorOpen: Boolean) {
+    fun stopMqtt() {
+        mqttService.disconnect()
+    }
+
+    private suspend fun updateSensorData(
+        latitude: Double,
+        longitude: Double,
+        speed: Int,
+        engineOn: Boolean,
+        doorOpen: Boolean
+    ) {
         val data = VehicleData(
-            latitude = 51.505,
-            longitude = -0.09,
+            latitude = latitude,
+            longitude = longitude,
             speed = speed,
             engineOn = engineOn,
             doorOpen = doorOpen
@@ -38,18 +62,16 @@ class MiniFleetTrackerRepository private constructor(
 
         _sensorData.emit(data)
 
-        val tripLog = TripLog(
-            timestamp = System.currentTimeMillis(),
+         saveTripLog(
             latitude = data.latitude,
             longitude = data.longitude,
             speed = data.speed,
             engineOn = data.engineOn,
             doorOpen = data.doorOpen
         )
-        tripLogDao.insertTripLog(tripLog)
     }
 
-     suspend fun saveTripLog(
+     private suspend fun saveTripLog(
         latitude: Double,
         longitude: Double,
         speed: Int,

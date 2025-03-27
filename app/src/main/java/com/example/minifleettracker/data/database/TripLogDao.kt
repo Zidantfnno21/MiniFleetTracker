@@ -11,7 +11,7 @@ interface TripLogDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertTripLog(tripLog: TripLog)
 
-    @Query("SELECT * FROM trip_logs ORDER BY timestamp DESC")
+    @Query("SELECT * FROM trip_logs ORDER BY timestamp ASC")
     fun getAllTripLogs(): LiveData<List<TripLog>>
 
     @Query("DELETE FROM trip_logs")

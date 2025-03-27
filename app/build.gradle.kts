@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("com.google.devtools.ksp")
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -16,6 +17,10 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildFeatures {
+        compose = true
     }
 
     buildTypes {
@@ -54,6 +59,9 @@ dependencies {
     implementation(libs.androidx.material.icons.core)
     implementation(libs.androidx.material.icons.extended)
 
+    //splashscreen
+    implementation (libs.androidx.core.splashscreen)
+
     //room
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
@@ -65,6 +73,13 @@ dependencies {
 
     //gson
     implementation (libs.gson)
+
+    //3rd party webview
+    implementation (libs.kevinnzou.compose.webview)
+
+    //drawable
+    implementation(libs.androidx.annotation)
+    implementation(libs.androidx.ui)
 
     debugImplementation(libs.androidx.ui.tooling)
     testImplementation(libs.junit)
