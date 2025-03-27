@@ -97,7 +97,7 @@ Before running this app, ensure you have Mosquitto installed on your laptop for 
 
 ## Screenshots
 
-![ss-1](https://github.com/user-attachments/assets/c52f986d-f390-45b0-9148-0797b14f1ecb)
-![ss-2](https://github.com/user-attachments/assets/266aa494-7d7c-45b6-857f-7aed46a60f05)
-![ss-3](https://github.com/user-attachments/assets/f1694feb-54b8-4b5a-856f-af6a730b4255)
+<img src="https://github.com/user-attachments/assets/c52f986d-f390-45b0-9148-0797b14f1ecb" width="300" />
+<img src="https://github.com/user-attachments/assets/266aa494-7d7c-45b6-857f-7aed46a60f05" width="300" />
+<img src="https://github.com/user-attachments/assets/f1694feb-54b8-4b5a-856f-af6a730b4255" width="300" />
 
